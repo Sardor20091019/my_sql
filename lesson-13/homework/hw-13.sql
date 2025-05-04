@@ -1,0 +1,112 @@
+SELECT CONCAT(EMPLOYEE_ID, '-', FIRST_NAME, ' ', LAST_NAME) AS EmployeeInfo
+FROM Employees
+LIMIT 1;
+
+UPDATE Employees
+SET PHONE_NUMBER = REPLACE(PHONE_NUMBER, '124', '999')
+WHERE PHONE_NUMBER LIKE '%124%';
+
+SELECT
+    FIRST_NAME AS "First Name",
+    LENGTH(FIRST_NAME) AS "Length of First Name"
+FROM Employees
+WHERE FIRST_NAME LIKE 'A%' OR FIRST_NAME LIKE 'J%' OR FIRST_NAME LIKE 'M%'
+ORDER BY FIRST_NAME;
+
+SELECT MANAGER_ID, SUM(SALARY) AS TotalSalary
+FROM Employees
+WHERE MANAGER_ID IS NOT NULL
+GROUP BY MANAGER_ID
+ORDER BY MANAGER_ID;
+
+SELECT Year1, GREATEST(Max1, Max2, Max3) AS HighestValue
+FROM TestMax;
+
+SELECT *
+FROM cinema
+WHERE id % 2 != 0 AND description != 'boring';
+
+SELECT Id, Vals
+FROM SingleOrder
+ORDER BY CASE WHEN Id = 0 THEN 1 ELSE 0 END, Id;
+
+SELECT COALESCE(ssn, passportid, itin) AS FirstNonNullValue
+FROM person;
+
+SELECT
+    SUBSTRING_INDEX(FullName, ' ', 1) AS Firstname,
+    CASE
+        WHEN LENGTH(FullName) - LENGTH(REPLACE(FullName, ' ', '')) > 1
+        THEN SUBSTRING_INDEX(SUBSTRING_INDEX(FullName, ' ', 2), ' ', -1)
+        ELSE NULL
+    END AS Middlename,
+    SUBSTRING_INDEX(FullName, ' ', -1) AS Lastname
+FROM Students;
+
+SELECT DISTINCT O2.*
+FROM Orders O1
+JOIN Orders O2 ON O1.CustomerID = O2.CustomerID
+WHERE O1.DeliveryState = 'CA' AND O2.DeliveryState = 'TX';
+
+SELECT GROUP_CONCAT(String ORDER BY SequenceNumber SEPARATOR ' ') AS ConcatenatedString
+FROM DMLTable;
+
+SELECT FIRST_NAME, LAST_NAME
+FROM Employees
+WHERE LENGTH(FIRST_NAME) + LENGTH(LAST_NAME) - LENGTH(REPLACE(CONCAT(FIRST_NAME, LAST_NAME), 'a', '')) >= 3;
+
+SELECT
+    DEPARTMENT_ID,
+    COUNT(*) AS TotalEmployees,
+    SUM(CASE WHEN HIRE_DATE <= DATE_SUB(CURDATE(), INTERVAL 3 YEAR) THEN 1 ELSE 0 END) AS EmployeesOver3Years,
+    (SUM(CASE WHEN HIRE_DATE <= DATE_SUB(CURDATE(), INTERVAL 3 YEAR) THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) AS PercentageOver3Years
+FROM Employees
+WHERE DEPARTMENT_ID IS NOT NULL
+GROUP BY DEPARTMENT_ID
+ORDER BY DEPARTMENT_ID;
+
+SELECT
+    JobDescription,
+    MAX(MissionCount) AS MostExperiencedMissionCount,
+    MIN(MissionCount) AS LeastExperiencedMissionCount,
+    (SELECT SpacemanID FROM Personal P_most WHERE P_most.JobDescription = P.JobDescription ORDER BY MissionCount DESC LIMIT 1) AS MostExperiencedSpacemanID,
+    (SELECT SpacemanID FROM Personal P_least WHERE P_least.JobDescription = P.JobDescription ORDER BY MissionCount ASC LIMIT 1) AS LeastExperiencedSpacemanID
+FROM Personal P
+GROUP BY JobDescription;
+
+SELECT
+    GROUP_CONCAT(CASE WHEN SUBSTRING('tf56sd#%OqH', n, 1) REGEXP '[A-Z]' THEN SUBSTRING('tf56sd#%OqH', n, 1) END ORDER BY n SEPARATOR '') AS Uppercase,
+    GROUP_CONCAT(CASE WHEN SUBSTRING('tf56sd#%OqH', n, 1) REGEXP '[a-z]' THEN SUBSTRING('tf56sd#%OqH', n, 1) END ORDER BY n SEPARATOR '') AS Lowercase,
+    GROUP_CONCAT(CASE WHEN SUBSTRING('tf56sd#%OqH', n, 1) REGEXP '[0-9]' THEN SUBSTRING('tf56sd#%OqH', n, 1) END ORDER BY n SEPARATOR '') AS Numbers,
+    GROUP_CONCAT(CASE WHEN SUBSTRING('tf56sd#%OqH', n, 1) REGEXP '[^A-Za-z0-9]' THEN SUBSTRING('tf56sd#%OqH', n, 1) END ORDER BY n SEPARATOR '') AS OtherCharacters
+FROM (
+    SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12 UNION ALL SELECT 13 UNION ALL SELECT 14 UNION ALL SELECT 15 UNION ALL SELECT 16 UNION ALL SELECT 17 UNION ALL SELECT 18 UNION ALL SELECT 19 UNION ALL SELECT 20
+) numbers
+WHERE n <= LENGTH('tf56sd#%OqH');
+
+SELECT
+    StudentID,
+    FullName,
+    Grade,
+    SUM(Grade) OVER (ORDER BY StudentID ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS CumulativeGrade
+FROM Students
+ORDER BY StudentID;
+
+SELECT
+    Equation,
+    CAST(REPLACE(REPLACE(REPLACE(Equation, '+', ' '), '-', ' -'), ' ', '+') AS DECIMAL(10,2)) AS Result
+FROM Equations;
+
+SELECT Birthday, GROUP_CONCAT(StudentName ORDER BY StudentName SEPARATOR ', ') AS StudentsSharingBirthday
+FROM Student
+GROUP BY Birthday
+HAVING COUNT(StudentName) > 1;
+
+SELECT
+    CASE WHEN PlayerA < PlayerB THEN PlayerA ELSE PlayerB END AS Player1,
+    CASE WHEN PlayerA < PlayerB THEN PlayerB ELSE PlayerA END AS Player2,
+    SUM(Score) AS TotalScore
+FROM PlayerScores
+GROUP BY
+    CASE WHEN PlayerA < PlayerB THEN PlayerA ELSE PlayerB END,
+    CASE WHEN PlayerA < PlayerB THEN PlayerB ELSE PlayerA END;
