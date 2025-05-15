@@ -1,3 +1,5 @@
+-- Create Employees table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Employees]') AND type in (N'U'))
 CREATE TABLE Employees (
     EmployeeID INT PRIMARY KEY,
     FirstName NVARCHAR(50),
@@ -6,173 +8,148 @@ CREATE TABLE Employees (
     Salary DECIMAL(10,2)
 );
 
+-- Create DepartmentBonus table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[DepartmentBonus]') AND type in (N'U'))
 CREATE TABLE DepartmentBonus (
     Department NVARCHAR(50) PRIMARY KEY,
     BonusPercentage DECIMAL(5,2)
 );
 
-INSERT INTO Employees VALUES
+-- Insert sample data into Employees
+TRUNCATE TABLE Employees;
+INSERT INTO Employees (EmployeeID, FirstName, LastName, Department, Salary) VALUES
 (1, 'John', 'Doe', 'Sales', 5000),
 (2, 'Jane', 'Smith', 'Sales', 5200),
 (3, 'Mike', 'Brown', 'IT', 6000),
 (4, 'Anna', 'Taylor', 'HR', 4500);
-1
-INSERT INTO DepartmentBonus VALUES
+
+-- Insert sample data into DepartmentBonus
+TRUNCATE TABLE DepartmentBonus;
+INSERT INTO DepartmentBonus (Department, BonusPercentage) VALUES
 ('Sales', 10),
 ('IT', 15),
 ('HR', 8);
 
-select * from Employees
-select * from DepartmentBonus
+-- Task 1: Stored procedure to create temp table with employee bonuses
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetEmployeeBonuses]') AND type in (N'P'))
+DROP PROCEDURE [dbo].[GetEmployeeBonuses];
+GO
 
+CREATE PROCEDURE GetEmployeeBonuses
+AS
+BEGIN
+    SET NOCOUNT ON;
 
---- task 1 Create a stored procedure that:
+    CREATE TABLE #EmployeeBonus (
+        EmployeeID INT,
+        FullName NVARCHAR(100),
+        Department NVARCHAR(50),
+        Salary DECIMAL(10,2),
+        BonusAmount DECIMAL(10,2)
+    );
 
---Creates a temp table #EmployeeBonus
---Inserts EmployeeID, FullName (FirstName + LastName), Department, Salary, and BonusAmount into it
---(BonusAmount = Salary * BonusPercentage / 100)
---Then, selects all data from the temp table.
+    INSERT INTO #EmployeeBonus (EmployeeID, FullName, Department, Salary, BonusAmount)
+    SELECT 
+        e.EmployeeID,
+        e.FirstName + ' ' + e.LastName AS FullName,
+        e.Department,
+        e.Salary,
+        e.Salary * db.BonusPercentage / 100 AS BonusAmount
+    FROM Employees e
+    JOIN DepartmentBonus db ON e.Department = db.Department;
 
+    SELECT EmployeeID, FullName, Department, Salary, BonusAmount 
+    FROM #EmployeeBonus;
+END;
+GO
 
-------------📄 Task 2:
-------------Create a stored procedure that:
+-- Task 2: Stored procedure to update salaries by department and return updated employees
+IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[UpdateEmployeeSalaries]') AND type in (N'P'))
+DROP PROCEDURE [dbo].[UpdateEmployeeSalaries];
+GO
 
-------------Accepts a department name and an increase percentage as parameters
-------------Update salary of all employees in the given department by the given percentage
-------------Returns updated employees from that department.
+CREATE PROCEDURE UpdateEmployeeSalaries
+    @Department NVARCHAR(50),
+    @IncreasePercentage DECIMAL(5,2)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
+    UPDATE Employees
+    SET Salary = Salary * (1 + @IncreasePercentage / 100)
+    WHERE Department = @Department;
 
+    SELECT 
+        EmployeeID,
+        FirstName + ' ' + LastName AS FullName,
+        Department,
+        Salary
+    FROM Employees
+    WHERE Department = @Department;
+END;
+GO
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-create proc getemployeebonuses
-as
-begin
-    create table #employeebonus ( employeeid int, fullname nvarchar(100), department nvarchar(50), salary decimal(10,2),  bonusamount decimal(10,2))
-    insert into #employeebonus (employeeid, fullname, department, salary, bonusamount)
-    select  e.employeeid,  e.firstname + ' ' + e.lastname as fullname,  e.department,  e.salary, e.salary * db.bonuspercentage / 100 as bonusamount from employees as e
-    join 
-    departmentbonus db on e.department = db.department;
-    select * from #employeebonus;
-end
-
-exec getemployeebonuses
-
-
-create proc getupdatedsalaryofemployees
-as
-begin
-	create table #employeeupdatedsalary( employeeid int, fullname nvarchar(100), department nvarchar(50), salary decimal(10,2),  bonusamount decimal(10,2), Updatedsalary decimal(10,2))
-    insert into #employeeupdatedsalary (employeeid, fullname, department, salary, bonusamount, Updatedsalary)
-    select  e.employeeid,  e.firstname + ' ' + e.lastname as fullname,  e.department,  e.salary, e.salary * db.BonusPercentage / 100 as bonusamount,e.salary * db.bonuspercentage / 100 + e.Salary as Updatedsalary from employees as e
-     join 
-    departmentbonus db on e.department = db.department;
-    select * from #employeeupdatedsalary
-end
-
-
-exec getupdatedsalaryofemployees
-exec getemployeebonuses
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+-- Create Products_Current table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Products_Current]') AND type in (N'U'))
 CREATE TABLE Products_Current (
     ProductID INT PRIMARY KEY,
     ProductName NVARCHAR(100),
     Price DECIMAL(10,2)
 );
 
+-- Create Products_New table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Products_New]') AND type in (N'U'))
 CREATE TABLE Products_New (
     ProductID INT PRIMARY KEY,
     ProductName NVARCHAR(100),
     Price DECIMAL(10,2)
 );
 
-INSERT INTO Products_Current VALUES
+-- Insert sample data into Products_Current
+TRUNCATE TABLE Products_Current;
+INSERT INTO Products_Current (ProductID, ProductName, Price) VALUES
 (1, 'Laptop', 1200),
 (2, 'Tablet', 600),
 (3, 'Smartphone', 800);
 
-INSERT INTO Products_New VALUES
+-- Insert sample data into Products_New
+TRUNCATE TABLE Products_New;
+INSERT INTO Products_New (ProductID, ProductName, Price) VALUES
 (2, 'Tablet Pro', 700),
 (3, 'Smartphone', 850),
 (4, 'Smartwatch', 300);
 
-select * from Products_Current
-select * from Products_New
+-- Task 3: MERGE statement to synchronize Products_Current with Products_New
+MERGE INTO Products_Current AS Target
+USING Products_New AS Source
+ON Target.ProductID = Source.ProductID
+WHEN MATCHED THEN
+    UPDATE SET
+        Target.ProductName = Source.ProductName,
+        Target.Price = Source.Price
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (ProductID, ProductName, Price)
+    VALUES (Source.ProductID, Source.ProductName, Source.Price)
+WHEN NOT MATCHED BY SOURCE THEN
+    DELETE;
 
-go
-;merge into products_current as target
-using Products_New as Source
-on Target.productID = Source.ProductID
-when matched then
-	update set
-		target.productID = Source.productID
-		target.productname = Source.productname,
-		target.price = Source.price
-		
-when Not Matched by Target then
-	insert (productid,productname,price)
-	values (Source.productid,Source.productname,Source.price);
+-- Create Tree table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Tree]') AND type in (N'U'))
+CREATE TABLE Tree (
+    id INT,
+    p_id INT
+);
 
-	select * from products_current
-	select * from products_new
+-- Insert sample data into Tree
+TRUNCATE TABLE Tree;
+INSERT INTO Tree (id, p_id) VALUES
+(1, NULL),
+(2, 1),
+(3, 1),
+(4, 2),
+(5, 2);
 
-
-
-
-
-	;
-	CREATE TABLE  Tree (id INT, p_id INT);
-INSERT INTO Tree (id, p_id) VALUES (1, NULL);
-INSERT INTO Tree (id, p_id) VALUES (2, 1);
-INSERT INTO Tree (id, p_id) VALUES (3, 1);
-INSERT INTO Tree (id, p_id) VALUES (4, 2);
-INSERT INTO Tree (id, p_id) VALUES (5, 2);
-INSERT INTO Tree (id, p_id) VALUES (6, 5);
-
-select * from tree
-
-select * from tree
-
+-- Task 4: Query to determine node types in the tree
 SELECT 
     t1.id,
     CASE 
@@ -183,38 +160,32 @@ SELECT
 FROM Tree t1
 ORDER BY t1.id;
 
-
-
-
-
-
-
+-- Create Signups table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Signups]') AND type in (N'U'))
 CREATE TABLE Signups (
     user_id INT PRIMARY KEY,
     time_stamp DATETIME
 );
 
--- Confirmations jadvalini yaratish
+-- Create Confirmations table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Confirmations]') AND type in (N'U'))
 CREATE TABLE Confirmations (
     user_id INT,
     time_stamp DATETIME,
-    action VARCHAR(10) CHECK (action IN ('confirmed', 'timeout'))
+    action VARCHAR(10),
+    CONSTRAINT CHK_action CHECK (action IN ('confirmed', 'timeout'))
 );
 
--- Signups jadvalidagi ma'lumotlarni tozalash
+-- Insert sample data into Signups
 TRUNCATE TABLE Signups;
-
--- Signups jadvaliga ma'lumot kiritish
 INSERT INTO Signups (user_id, time_stamp) VALUES 
 (3, '2020-03-21 10:16:13'),
 (7, '2020-01-04 13:57:59'),
 (2, '2020-07-29 23:09:44'),
 (6, '2020-12-09 10:39:37');
 
--- Confirmations jadvalidagi ma'lumotlarni tozalash
+-- Insert sample data into Confirmations
 TRUNCATE TABLE Confirmations;
-
--- Confirmations jadvaliga ma'lumot kiritish
 INSERT INTO Confirmations (user_id, time_stamp, action) VALUES 
 (3, '2021-01-06 03:30:46', 'timeout'),
 (3, '2021-07-14 14:00:00', 'timeout'),
@@ -224,10 +195,7 @@ INSERT INTO Confirmations (user_id, time_stamp, action) VALUES
 (2, '2021-01-22 00:00:00', 'confirmed'),
 (2, '2021-02-28 23:59:59', 'timeout');
 
-
-
-
-
+-- Task 5: Query to calculate confirmation rate
 SELECT 
     s.user_id,
     ROUND(
@@ -243,10 +211,7 @@ LEFT JOIN Confirmations c ON s.user_id = c.user_id
 GROUP BY s.user_id
 ORDER BY s.user_id;
 
-
-
-
--- Create the employees table
+-- Create employees table for Task 6
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[employees]') AND type in (N'U'))
 CREATE TABLE employees (
     id INT PRIMARY KEY,
@@ -254,20 +219,17 @@ CREATE TABLE employees (
     salary DECIMAL(10,2)
 );
 
--- Clear and insert sample data
+-- Insert sample data for Task 6
 TRUNCATE TABLE employees;
 INSERT INTO employees (id, name, salary) VALUES
 (1, 'Alice', 50000),
 (2, 'Bob', 60000),
 (3, 'Charlie', 50000);
 
--- Query to find employees with the lowest salary using a subquery
+-- Task 6: Query to find employees with lowest salary
 SELECT id, name, salary
 FROM employees
 WHERE salary = (SELECT MIN(salary) FROM employees);
-
-
-
 
 -- Create Products table
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Products]') AND type in (N'U'))
@@ -336,7 +298,7 @@ INSERT INTO Sales (SaleID, ProductID, Quantity, SaleDate) VALUES
 (19, 15, 3, '2024-03-11'),
 (20, 19, 4, '2024-04-01');
 
--- Create stored procedure GetProductSalesSummary
+-- Task 7: Stored procedure GetProductSalesSummary
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetProductSalesSummary]') AND type in (N'P'))
 DROP PROCEDURE [dbo].[GetProductSalesSummary];
 GO
@@ -359,3 +321,4 @@ BEGIN
     GROUP BY p.ProductName;
 END;
 GO
+
